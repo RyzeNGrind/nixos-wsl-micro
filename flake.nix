@@ -41,6 +41,7 @@
                   nixos-container
                   tzdata
                   wget
+                  jq
                 ];
 
                 nix.settings = {
