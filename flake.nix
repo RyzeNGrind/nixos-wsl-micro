@@ -21,7 +21,7 @@
     }:
     {
       nixosConfigurations = {
-        nixos = nixpkgs.lib.nixosSystem {
+        nix-ws = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
           modules = [
 
@@ -61,7 +61,7 @@
                 };
 
                 users = {
-                  users.nixos = {
+                  users.ryzengrind = {
                     isNormalUser = true;
                     extraGroups = [
                       "docker"
@@ -74,7 +74,8 @@
 
                 wsl = {
                   enable = true;
-                  defaultUser = "nixos";
+                  defaultUser = "ryzengrind";
+                  wslConf.network.hostname = "nix-pc";
                   docker-desktop.enable = true;
                   startMenuLaunchers = true;
                   useWindowsDriver = true;

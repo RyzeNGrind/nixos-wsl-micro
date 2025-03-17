@@ -1,6 +1,6 @@
 Minimum flake-enabled NixOS-WSL config, preconfigured for local development, including VSCode and Docker integration. Apply within [NixOS-WSL](https://github.com/nix-community/NixOS-WSL) with:
 ```bash
-nixos-rebuild switch --flake github:Avunu/nixos-wsl-micro#nixos --refresh
+nixos-rebuild switch --flake github:RyzeNGrind/nixos-wsl-micro#nix-ws --refresh
 ```
 If the above command fails, try:
 ```powershell
