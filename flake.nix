@@ -38,6 +38,10 @@
                     "nix-command"
                     "flakes"
                   ];
+                  trusted-users = [
+                    "root"
+                    "ryzengrind"
+                  ];
                 };
 
                 programs = {
@@ -50,21 +54,36 @@
                   { src = "${pkgs.coreutils}/bin/dirname"; }
                   { src = "${pkgs.coreutils}/bin/readlink"; }
                   { src = "${pkgs.git}/bin/git"; }
+                  { src = "${bashInteractive}/bin/bash"; }
+                  { src = "${findutils}/bin/find"; }
                 ];
 
-                environment.systemPackages = with pkgs; [
-                  curl
-                  git
-                  nano
-                  nixfmt-rfc-style
-                  nixos-container
-                  tzdata
-                  wget
-                  jq
-                ];
-
-
-                services.vscode-server.enable = true;
+                environment = {
+                  sessionVariables = {
+                    PATH = [
+                      "/run/wrappers/bin"
+                      "/run/current-system/sw/bin"
+                      "$HOME/.nix-profile/bin"
+                    ];
+                  };
+                  systemPackages = with pkgs; [
+                    curl
+                    git
+                    nano
+                    nixfmt-rfc-style
+                    nixos-container
+                    tzdata
+                    wget
+                    jq
+                  ];
+                };
+                
+                # Critical fix from nixos-vscode-server docs
+                services.vscode-server = {
+                  enable = true;
+                  nodejsPackage = pkgs.nodejs-18_x; # Specific version requirement
+                  installPath = "$HOME/.cursor-server";
+                };
 
                 system = {
                   stateVersion = "24.11";
