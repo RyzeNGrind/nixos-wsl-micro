@@ -60,6 +60,10 @@
 
                 system = {
                   stateVersion = "24.11";
+                  configurationRevision = 
+                    if self ? rev 
+                    then self.rev 
+                    else throw "Repository must be clean and committed";
                 };
 
                 users = {
