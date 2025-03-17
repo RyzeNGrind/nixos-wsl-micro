@@ -33,17 +33,6 @@
               { pkgs, lib, ... }:
               {
 
-                environment.systemPackages = with pkgs; [
-                  curl
-                  git
-                  nano
-                  nixfmt-rfc-style
-                  nixos-container
-                  tzdata
-                  wget
-                  jq
-                ];
-
                 nix.settings = {
                   experimental-features = [
                     "nix-command"
@@ -55,6 +44,25 @@
                   direnv.enable = true;
                   nix-ld.enable = true;
                 };
+
+                wsl.extraBin = with pkgs; [
+                  { src = "${pkgs.coreutils}/bin/uname"; }
+                  { src = "${pkgs.coreutils}/bin/dirname"; }
+                  { src = "${pkgs.coreutils}/bin/readlink"; }
+                  { src = "${pkgs.git}/bin/git"; }
+                ];
+
+                environment.systemPackages = with pkgs; [
+                  curl
+                  git
+                  nano
+                  nixfmt-rfc-style
+                  nixos-container
+                  tzdata
+                  wget
+                  jq
+                ];
+
 
                 services.vscode-server.enable = true;
 
