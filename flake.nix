@@ -59,12 +59,10 @@
                 ];
 
                 environment = {
-                  sessionVariables = {
-                    PATH = [
-                      "/run/wrappers/bin"
-                      "/run/current-system/sw/bin"
-                      "$HOME/.nix-profile/bin"
-                    ];
+                  variables = {
+                    PATH = lib.mkDefault (lib.mkBefore [
+                      "$HOME/.nix-profile/bin"  # Only add your custom paths
+                    ]);
                   };
                   systemPackages = with pkgs; [
                     curl
@@ -90,7 +88,7 @@
                   configurationRevision = 
                     if self ? rev 
                     then self.rev 
-                    else throw "Repository must be clean and committed";
+                    else (lib.trace "Repository must be clean and committed" null);
                 };
 
                 users = {
