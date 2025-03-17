@@ -52,6 +52,7 @@
 
                 programs = {
                   direnv.enable = true;
+                  nix-ld.enable = true;
                 };
 
                 services.vscode-server.enable = true;
