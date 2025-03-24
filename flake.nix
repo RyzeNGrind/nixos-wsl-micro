@@ -9,112 +9,121 @@
       url = "github:nix-community/nixos-vscode-server";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    nix-vscode-extensions = {
+      url = "github:nix-community/nix-vscode-extensions";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs =
-    {
-      self,
-      nixpkgs,
-      nixos-wsl,
-      vscode-server,
-      ...
-    }:
-    {
-      nixosConfigurations = {
-        nix-ws = nixpkgs.lib.nixosSystem {
-          system = "x86_64-linux";
-          modules = [
-
-            nixos-wsl.nixosModules.default
-
-            vscode-server.nixosModules.default
-
-            (
-              { pkgs, lib, ... }:
-              {
-
-                nix.settings = {
-                  experimental-features = [
-                    "nix-command"
-                    "flakes"
-                  ];
-                  trusted-users = [
-                    "root"
-                    "ryzengrind"
-                  ];
+  outputs = { self, nixpkgs, nixos-wsl, vscode-server, nix-vscode-extensions, ... }: {
+    nixosConfigurations = {
+      nix-ws = nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
+        modules = [
+          nixos-wsl.nixosModules.default
+          vscode-server.nixosModules.default
+          (
+            { pkgs, lib, ... }:
+            let
+              vscodeExtensionsOverlay = nix-vscode-extensions.overlays.default;
+              pkgsWithExtensions = import nixpkgs {
+                inherit (pkgs) system;
+                overlays = [ vscodeExtensionsOverlay ];
+                config = {
+                  allowUnfree = true;
                 };
-
-                programs = {
-                  direnv.enable = true;
-                  nix-ld.enable = true;
-                };
-
-                wsl.extraBin = with pkgs; [
-                  { src = "${pkgs.coreutils}/bin/uname"; }
-                  { src = "${pkgs.coreutils}/bin/dirname"; }
-                  { src = "${pkgs.coreutils}/bin/readlink"; }
-                  { src = "${pkgs.git}/bin/git"; }
-                  { src = "${bashInteractive}/bin/bash"; }
-                  { src = "${findutils}/bin/find"; }
+              };
+            in
+            {
+              nix.settings = {
+                experimental-features = [
+                  "nix-command"
+                  "flakes"
                 ];
+                trusted-users = [
+                  "root"
+                  "ryzengrind"
+                ];
+              };
 
-                environment = {
-                  variables = {
-                    PATH = lib.mkDefault (lib.mkBefore [
-                      "$HOME/.nix-profile/bin"  # Only add your custom paths
-                    ]);
-                  };
-                  systemPackages = with pkgs; [
-                    curl
-                    git
-                    nano
-                    nixfmt-rfc-style
-                    nixos-container
-                    tzdata
-                    wget
-                    jq
-                  ];
-                };
-                
-                # Critical fix from nixos-vscode-server docs
-                services.vscode-server = {
-                  enable = true;
-                  nodejsPackage = pkgs.nodejs-18_x; # Specific version requirement
-                  installPath = "$HOME/.cursor-server";
-                };
+              programs = {
+                direnv.enable = true;
+                nix-ld.enable = true;
+              };
 
-                system = {
-                  stateVersion = "24.11";
-                  configurationRevision = 
-                    if self ? rev 
-                    then self.rev 
-                    else (lib.trace "Repository must be clean and committed" null);
-                };
+              wsl.extraBin = with pkgs; [
+                { src = "${pkgs.coreutils}/bin/uname"; }
+                { src = "${pkgs.coreutils}/bin/dirname"; }
+                { src = "${pkgs.coreutils}/bin/readlink"; }
+                { src = "${pkgs.git}/bin/git"; }
+                { src = "${bashInteractive}/bin/bash"; }
+                { src = "${findutils}/bin/find"; }
+              ];
 
-                users = {
-                  users.ryzengrind = {
-                    isNormalUser = true;
-                    extraGroups = [
-                      "docker"
-                      "nixbld"
-                      "wheel"
+              environment = {
+                variables = {
+                  PATH = lib.mkDefault (lib.mkBefore [
+                    "$HOME/.nix-profile/bin"
+                  ]);
+                };
+                systemPackages = with pkgsWithExtensions; [
+                  curl
+                  git
+                  nano
+                  nixfmt-rfc-style
+                  nixos-container
+                  tzdata
+                  wget
+                  jq
+                  (pkgsWithExtensions.vscode-with-extensions.override {
+                    vscode = pkgsWithExtensions.vscodium;
+                    vscodeExtensions = [
+                      pkgsWithExtensions.vscode-marketplace.golang.go
+                      pkgsWithExtensions.vscode-marketplace-release.rust-lang.rust-analyzer
+                      pkgsWithExtensions.vscode-marketplace.ms-python.vscode-pylance
                     ];
-                    shell = pkgs.bashInteractive;
-                  };
-                };
+                  })
+                ];
+              };
 
-                wsl = {
-                  enable = true;
-                  defaultUser = "ryzengrind";
-                  wslConf.network.hostname = "nix-pc";
-                  docker-desktop.enable = true;
-                  startMenuLaunchers = true;
-                  useWindowsDriver = true;
+              # Critical fix from nixos-vscode-server docs
+              services.vscode-server = {
+                enable = true;
+                nodejsPackage = pkgs.nodejs_18;
+                installPath = "$HOME/.vscodium-server";
+              };
+
+              system = {
+                stateVersion = "24.11";
+                configurationRevision = if self ? rev
+                  then self.rev
+                  else (lib.trace "Repository must be clean and committed" null);
+              };
+
+              users = {
+                users.ryzengrind = {
+                  isNormalUser = true;
+                  extraGroups = [
+                    "docker"
+                    "nixbld"
+                    "wheel"
+                  ];
+                  shell = pkgs.bashInteractive;
                 };
-              }
-            )
-          ];
-        };
+              };
+
+              wsl = {
+                enable = true;
+                defaultUser = "ryzengrind";
+                wslConf.network.hostname = "nix-pc";
+                docker-desktop.enable = true;
+                startMenuLaunchers = true;
+                useWindowsDriver = true;
+              };
+            }
+          )
+        ];
       };
     };
+  };
 }
