@@ -132,17 +132,32 @@
                   startMenuLaunchers = true;
                   useWindowsDriver = true;
 		  extraBin = with pkgs; [
-                    { src = "${pkgs.coreutils}/bin/uname"; }
-                    { src = "${pkgs.coreutils}/bin/dirname"; }
-                    { src = "${pkgs.coreutils}/bin/readlink"; }
-                    { src = "${pkgs.git}/bin/git"; }
+                    { src = "${coreutils}/bin/uname"; }
+                    { src = "${coreutils}/bin/dirname"; }
+                    { src = "${coreutils}/bin/readlink"; }
+                    { src = "${git}/bin/git"; }
                     { src = "${bashInteractive}/bin/bash"; }
                     { src = "${findutils}/bin/find"; }
+		    { src = "${coreutils}/bin/mkdir"; }
+      		    { src = "${coreutils}/bin/cat"; }
+      		    { src = "${coreutils}/bin/whoami"; }
+      		    { src = "${coreutils}/bin/ls"; }
+      		    { src = "${busybox}/bin/addgroup"; }
+      		    { src = "${su}/bin/groupadd"; }
+      		    { src = "${su}/bin/usermod"; }
+      		    { src = "${shadow}/sbin/unix_chkpwd"; } #<-- CRUCIAL for PAM
+      		    { src = "${systemd}/bin/systemctl"; }
+      		    { src = "${systemd}/bin/loginctl"; } # Good to include for any linger checks
+      		    { src = "${gnugrep}/bin/grep"; }
                   ];
 		  usbip.enable = true;
                 };
-                
                 environment = {
+		  extraInit = ''
+  		  mkdir -p /usr/bin
+  		  ln -sf ${pkgs.systemd}/bin/systemctl /usr/bin/systemctl
+  		  ln -sf ${pkgs.gnugrep}/bin/grep /usr/bin/grep
+		  '';
                   variables = {
                     PATH = lib.mkDefault (lib.mkBefore [
                       "$HOME/.nix-profile/bin"  # Only add your custom paths
@@ -165,6 +180,10 @@
                     wget
                     jq
 	 	    linuxPackages.usbip
+		    coreutils
+		    findutils
+		    gnugrep
+		    tzdata
                   ];
                 };
                 
@@ -187,6 +206,10 @@
     	   	  execWheelOnly = true; # Optional security measure
     		  wheelNeedsPassword = false;
   		};
+		systemd.tmpfiles.rules = [
+  		  "z /run/systemd/system-generators/wsl-generator 0755 root root -"
+  		  "z /run/systemd/user-generators/wsl-user-generator 0755 root root -"
+		];
                 users = {
                   users.ryzengrind = {
                     isNormalUser = true;
@@ -212,6 +235,11 @@
 		    #TODO: change to fish once IDE{cursor,void,zed,vscodium,vscode} shell integration logic working
                     shell = pkgs.bashInteractive; 
                   };
+		  users.systemd-oom = {
+  		    isSystemUser = true;
+  		    description = "systemd OOMd user";
+  		    group = "nogroup";
+		  };
                 };
 	        services.openssh = {
     		  enable = true;
